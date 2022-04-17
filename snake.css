@@ -4,7 +4,7 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background-color: #ECF0F1;
+    background-color: #34495E;
 }
 
 div {
@@ -13,6 +13,7 @@ div {
 
 p {
     font-size: 40px;
+    color: #FFFFFF
 }
 
 .score {

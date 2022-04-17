@@ -1,46 +1,72 @@
 var snakeGame = snakeGame || {};
 
-const load = () =>{
+// hány pixel egy cella
+snakeGame.cellPixels = 20;
+// hány cella van x vagy y irányba
+snakeGame.numCells = 10;
+snakeGame.fullScreenLength = snakeGame.numCells*snakeGame.cellPixels;
 
+snakeGame.getSnakeCoord = () => {
+    return snakeGame.cellPixels*(snakeGame.numCells/2);
+}
+
+const load = () =>{
     const stage = new Konva.Stage({
         container: 'container',
-        width: 400,
-        height: 400,
+        width: snakeGame.fullScreenLength,
+        height: snakeGame.fullScreenLength,
     });
     
     snakeGame.layer = new Konva.Layer();
 
     snakeGame.Gameover = false;
 
-    snakeGame.screenDimension = {
-        width: 400,
-        height: 400
-    };
+    snakeGame.bg = new Konva.Rect({
+        width: snakeGame.fullScreenLength,
+        height: snakeGame.fullScreenLength,
+        fill: `#99b704`
+    }); 
+    snakeGame.layer.add(snakeGame.bg);
+
 
     snakeGame.snake = [new Konva.Rect({
-        x: 200,
-        y: 200,
-        width: 20,
-        height: 20,
-        fill: '#27AE60',
+        x: snakeGame.getSnakeCoord(),
+        y: snakeGame.getSnakeCoord(),
+        width: snakeGame.cellPixels,
+        height: snakeGame.cellPixels,
+        fill: '#000000',
+        stroke: '#99b704',
+        strokeWidth: 1,
     })];
+    snakeGame.layer.add(snakeGame.snake[0]);
+
+
+    /* snakeGame.snake = [];
+    for(let i=0;i<snakeGame.numCells;i++) {
+        for(let j=0;j<snakeGame.numCells-1;j++) {
+            let snakePiece = new Konva.Rect({
+                x: i*snakeGame.cellPixels,
+                y: j*snakeGame.cellPixels,
+                width: snakeGame.cellPixels,
+                height: snakeGame.cellPixels,
+                fill: '#000000',
+                stroke: '#99b704',
+                strokeWidth: 1,
+            });
+            console.log(snakePiece.x() + ' ' + snakePiece.y())
+            snakeGame.snake.push(snakePiece);
+            snakeGame.layer.add(snakePiece);
+        }
+    } */
 
     snakeGame.apple = new Konva.Rect({
-        x: Math.round(Math.random() * 10)*20,
-        y: Math.round(Math.random() * 10)*20,
-        width: 20,
-        height: 20,
+        x: snakeGame.snake[0].x() + snakeGame.cellPixels*3,
+        y: snakeGame.snake[0].y(),
+        width: snakeGame.cellPixels,
+        height: snakeGame.cellPixels,
         fill: '#E74C3C',
     });
-    
-    const bg = new Konva.Rect({
-        width: 800,
-        height: 800,
-        fill: '#34495E'
-    }); 
 
-    snakeGame.layer.add(bg);
-    snakeGame.layer.add(snakeGame.snake[0]);
     snakeGame.layer.add(snakeGame.apple);
 
     stage.add(snakeGame.layer);
@@ -52,17 +78,25 @@ const load = () =>{
         if (!snakeGame.Gameover) {
             snakeGame.gameLoop();
         }      
-    }, 200);
+    }, 300);
     
     window.addEventListener('keydown', function (e) {
         if (e.keyCode === 37) { //left
-            snakeGame.direction = "Left";
+            if (snakeGame.direction !== "Right") {
+                snakeGame.direction = "Left";
+            }            
         } else if (e.keyCode === 38) {  //top
-            snakeGame.direction = "Up";
+            if (snakeGame.direction !== "Down") {
+                snakeGame.direction = "Up";
+            }   
         } else if (e.keyCode === 39) {  //right
-            snakeGame.direction = "Right";
+            if (snakeGame.direction !== "Left") {
+                snakeGame.direction = "Right";
+            }
         } else if (e.keyCode === 40) {  //bottom
-            snakeGame.direction = "Down";
+            if (snakeGame.direction !== "Up") {
+                snakeGame.direction = "Down";
+            }            
         } else {
             return;
         }
@@ -71,22 +105,29 @@ const load = () =>{
 };
 
 snakeGame.gameLoop = () => {
+    if(snakeGame.checkWin()) {
+        return;
+    }
+
     const newSnakePosition = {
         x: snakeGame.snake[0].x(),
         y: snakeGame.snake[0].y()
     };
 
     if (snakeGame.direction === "Right") {
-        newSnakePosition.x += 20;
+        newSnakePosition.x += snakeGame.cellPixels;
     } else if (snakeGame.direction === "Left") {
-        newSnakePosition.x -= 20;
+        newSnakePosition.x -= snakeGame.cellPixels;
     } else if (snakeGame.direction === "Up") {
-        newSnakePosition.y -= 20;
+        newSnakePosition.y -= snakeGame.cellPixels;
     } else if (snakeGame.direction === "Down") {
-        newSnakePosition.y += 20;
+        newSnakePosition.y += snakeGame.cellPixels;
     }
 
     if (snakeGame.checkWall(newSnakePosition)) {
+        return;
+    }
+    if (snakeGame.checkSnake(newSnakePosition)) {
         return;
     }
     if (snakeGame.getApple(newSnakePosition)) {
@@ -97,12 +138,32 @@ snakeGame.gameLoop = () => {
 
 snakeGame.checkWall = (newSnakePosition) => {
     if (newSnakePosition.x < 0 || 
-            newSnakePosition.x >= snakeGame.screenDimension.width || 
-            newSnakePosition.y >= snakeGame.screenDimension.height || 
+            newSnakePosition.x >= snakeGame.fullScreenLength || 
+            newSnakePosition.y >= snakeGame.fullScreenLength || 
             newSnakePosition.y < 0) {
         alert('DEAD');
         snakeGame.Gameover = true;
-        snakeGame.scores.push(snakeGame.snake.length)
+        return true;
+    }
+    return false;
+};
+
+snakeGame.checkSnake = (newSnakePosition) => {
+
+    for (let i = 0; i < snakeGame.snake.length-1; i++) {
+        if (snakeGame.snake[i].x() === newSnakePosition.x && snakeGame.snake[i].y() === newSnakePosition.y) {
+            alert('DEAD');
+            snakeGame.Gameover = true;
+            return true;
+        }
+    };
+    return false;
+};
+
+snakeGame.checkWin = () => {
+    if (snakeGame.numCells*snakeGame.numCells === snakeGame.snake.length) {
+        alert('WIN');
+        snakeGame.Gameover = true;
         return true;
     }
     return false;
@@ -114,15 +175,31 @@ snakeGame.getApple = (newSnakePosition) => {
         snakeGame.snake.unshift(new Konva.Rect({
             x: snakeGame.apple.x(),
             y: snakeGame.apple.y(),
-            width: 20,
-            height: 20,
-            fill: '#27AE60',
+            width: snakeGame.cellPixels,
+            height: snakeGame.cellPixels,
+            fill: '#000000',
+            stroke: '#99b704',
+            strokeWidth: 1,
         }));
         
         snakeGame.layer.add(snakeGame.snake[0]);
-        
-        snakeGame.apple.x(Math.round(Math.random() * 10)*20);
-        snakeGame.apple.y(Math.round(Math.random() * 10)*20);
+
+        let goodPosition = true;
+        do {
+            snakeGame.apple.x(Math.round(Math.random() * (snakeGame.numCells-1))*snakeGame.cellPixels);
+            snakeGame.apple.y(Math.round(Math.random() * (snakeGame.numCells-1))*snakeGame.cellPixels);
+            
+            goodPosition = true;
+            for (let i = 0; i < snakeGame.snake.length; i++) {
+                if (snakeGame.snake[i].x() === snakeGame.apple.x() && snakeGame.snake[i].y() === snakeGame.apple.y()) {
+                    goodPosition = false;
+                    break;
+                }
+            }
+        } while(goodPosition === false)
+
+        snakeGame.snakeColor()
+        snakeGame.apple.moveToTop()
         return true;
     }
     return false;
@@ -136,7 +213,15 @@ snakeGame.snakeMovement = (newSnakePosition) =>{
 
     snakeGame.snake.unshift(lastSnake);
 
-    document.getElementById('score').innerHTML = snakeGame.snake.length   
+    document.getElementById('score').innerHTML = snakeGame.snake.length
+    snakeGame.snakeColor()
+};
+
+snakeGame.snakeColor = () => {
+    snakeGame.snake[0].fill('#000000');
+    for(let i = 1; i < snakeGame.snake.length; i++) {
+        snakeGame.snake[i].fill(`#828282`)
+    }
 };
 
 const loadEvent = () => {
